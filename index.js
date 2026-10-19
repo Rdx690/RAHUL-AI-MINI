@@ -144,7 +144,7 @@ async function getFastVideoUrl(url) {
     return null;
 }
 
-// Arithmetic parser: supports numbers, parentheses and basic arithmetic without eval().
+// Arithmetic parser: supports numbers, parentheses and basic arithmetic operators.
 function calculateExpression(expression) {
     if (!expression || expression.length > 120 || !/^[0-9+\\-*/%.()]+$/.test(expression)) throw new Error('Invalid expression');
     let index = 0;
