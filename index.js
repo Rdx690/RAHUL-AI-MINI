@@ -391,20 +391,43 @@ async function connectToWhatsApp() {
                 await sock.sendMessage(from, { text: menuText }, { quoted: msg });
             }
             else if (command === 'play' || command === 'song') {
-                if (!args) return sock.sendMessage(from, { text: `❌ Add a song name. Example: ${PREFIX}play Kesariya` }, { quoted: msg });
-                await sock.sendMessage(from, { text: `🔍 Searching YouTube for "${args}"…` }, { quoted: msg });
+                if (!args) return sock.sendMessage(from, { text: '🎵 *MUSIC STUDIO*\\n\\nUse: ' + PREFIX + 'play <song name>\\nExample: ' + PREFIX + 'play Blinding Lights' }, { quoted: msg });
+                await sock.sendMessage(from, { text: '╭━━〔 🎧 MUSIC STUDIO 〕━━╮\\n┃ 🔎 Searching: ' + args + '\\n┃ ⚡ Fetching song details…\\n╰━━━━━━━━━━━━━━━━━━━━╯' }, { quoted: msg });
                 try {
-                    const searchResult = await yts(args);
-                    const song = searchResult.videos[0];
-                    if (!song) return sock.sendMessage(from, { text: '❌ No song found.' }, { quoted: msg });
-                    const infoText = `🎵 *RAHUL-AI-MINI MUSIC* 🎵
-📌 *Title:* ${song.title}
-⏱️ *Duration:* ${song.timestamp}
-👀 *Views:* ${song.views}
-🔗 *Link:* ${song.url}`;
-                    await sock.sendMessage(from, { text: infoText }, { quoted: msg });
+                    const musicApi = 'https://api.sayan-nexuswork.workers.dev/music?query=' + encodeURIComponent(args);
+                    const musicResponse = await axios.get(musicApi, { timeout: 20000 });
+                    const song = musicResponse.data;
+                    if (!song || song.status !== 'success' || !song.url) {
+                        return sock.sendMessage(from, { text: '❌ No playable song found. Try another title.' }, { quoted: msg });
+                    }
+                    const caption = '╭━━━〔 🎶 *NOW PLAYING* 〕━━━╮\\n' +
+                        '┃ 🎵 *Title:* ' + (song.title || args) + '\\n' +
+                        '┃ 🎤 *Artist/Channel:* ' + (song.channel || 'Unknown') + '\\n' +
+                        '┃ ⏱️ *Duration:* ' + (song.duration || 'Unknown') + '\\n' +
+                        '┃ 👀 *Views:* ' + (song.views || 'Unknown') + '\\n' +
+                        '┃ 🎚️ *Quality:* ' + (song.quality || 'MP3') + '\\n' +
+                        '┃ 💿 *Format:* ' + (song.format || 'MP3') + '\\n' +
+                        '╰━━━━━━━━━━━━━━━━━━━━━━╯\\n' +
+                        '✨ *Powered by RAHUL-AI-MINI*';
+                    if (song.thumbnail) {
+                        try {
+                            await sock.sendMessage(from, { image: { url: song.thumbnail }, caption }, { quoted: msg });
+                        } catch (imageError) {
+                            console.error('Music thumbnail error:', imageError.message);
+                            await sock.sendMessage(from, { text: caption }, { quoted: msg });
+                        }
+                    } else {
+                        await sock.sendMessage(from, { text: caption }, { quoted: msg });
+                    }
+                    await sock.sendMessage(from, {
+                        audio: { url: song.url },
+                        mimetype: 'audio/mpeg',
+                        fileName: ((song.title || args).replace(/[\\\\/:*?"<>|]/g, '_').slice(0, 100) || 'song') + '.mp3',
+                        ptt: false
+                    }, { quoted: msg });
                 } catch (err) {
-                    await sock.sendMessage(from, { text: '❌ Search failed. Try again later.' }, { quoted: msg });
+                    console.error('Music API error:', err.message);
+                    await sock.sendMessage(from, { text: '❌ Music search/download failed. The API may be unavailable; please try again later.' }, { quoted: msg });
                 }
             }
             else if (command === 'mp3') {
