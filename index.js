@@ -325,48 +325,69 @@ async function connectToWhatsApp() {
                 await sock.sendMessage(from, { text: `✅ Prefix changed to: ${PREFIX}` }, { quoted: msg });
             }
             else if (command === 'ping') {
-                const start = Date.now();
-                await sock.sendMessage(from, { text: '🚀 Checking response speed…' }, { quoted: msg });
-                await sock.sendMessage(from, { text: `⚡ *RAHUL-AI-MINI STATUS*\\n\\n⏱️ *Latency:* ${Date.now() - start} ms\\n🟢 *Status:* Active` }, { quoted: msg });
+                const startedAt = Date.now();
+                await sock.sendMessage(from, { text: '╭━━〔 ⚡ RAHUL-AI-MINI 〕━━╮\\n┃ ✦ Checking system pulse…\\n╰━━━━━━━━━━━━━━━━━━━━╯' }, { quoted: msg });
+                const latency = Date.now() - startedAt;
+                const uptimeMs = Date.now() - startTime;
+                const uptimeHours = Math.floor(uptimeMs / 3600000);
+                const uptimeMinutes = Math.floor((uptimeMs % 3600000) / 60000);
+                const uptimeSeconds = Math.floor((uptimeMs % 60000) / 1000);
+                const pingText = '╭━━━〔 ⚡ *SYSTEM PULSE* 〕━━━╮\\n' +
+                    '┃ 🤖 *Bot:* RAHUL-AI-MINI\\n' +
+                    '┃ 🚀 *Speed:* ' + latency + ' ms\\n' +
+                    '┃ 🟢 *Status:* ONLINE\\n' +
+                    '┃ ⏱️ *Uptime:* ' + uptimeHours + 'h ' + uptimeMinutes + 'm ' + uptimeSeconds + 's\\n' +
+                    '┃ 🔖 *Prefix:* ' + PREFIX + '\\n' +
+                    '┃ ✨ *Engine:* Baileys\\n' +
+                    '╰━━━━━━━━━━━━━━━━━━━━━━╯\\n' +
+                    '▰▰▰▰▰▰▰▰▰▰ 100%\\n⚡ *FAST • STABLE • READY*';
+                await sock.sendMessage(from, { text: pingText }, { quoted: msg });
             }
             else if (command === 'menu' || command === 'help') {
-                const menuText = `╭━━━〔 ✦ *RAHUL-AI-MINI* ✦ 〕━━━╮
-┃ ⚡ *SMART WHATSAPP ASSISTANT*
-┃ 👑 Developer: Rahul Master
-┃ 🟢 Status: Online & Ready
-┃ 🔖 Prefix: ${PREFIX}
-┃ ─────────────────────
-┃ ⚙️ *BOT SETTINGS*
-┃ ${PREFIX}update — Update bot
-┃ ${PREFIX}alwaysonline on/off
-┃ ${PREFIX}statusview on/off
-┃ ${PREFIX}autoreact on/off
-┃ ${PREFIX}autodl on/off
-┃ ${PREFIX}setprefix <symbol>
-┃ ${PREFIX}ping — Connection speed
-┃ ${PREFIX}uptime — Running time
-┃ ─────────────────────
-┃ 🎬 *MEDIA & DOWNLOADS*
-┃ Reply "send" to a status
-┃ ${PREFIX}play <song> — Search a song
-┃ ${PREFIX}mp3 <YouTube link> — Audio
-┃ ${PREFIX}tourl — Media to link
-┃ ${PREFIX}sticker / ${PREFIX}s — Sticker
-┃ ─────────────────────
-┃ 🧠 *SMART TOOLS*
-┃ ${PREFIX}ai <text> — AI chat
-┃ ${PREFIX}google <query> — Search
-┃ ${PREFIX}weather <city> — Weather
-┃ ${PREFIX}qr <text> — QR code
-┃ ${PREFIX}calc <math> — Calculator
-┃ ${PREFIX}quote — Motivation
-┃ ─────────────────────
-┃ 👥 *GROUP TOOLS*
-┃ ${PREFIX}tagall [message]
-┃ ${PREFIX}mute — Admin-only messages
-┃ ${PREFIX}unmute — Allow all messages
-╰━━━━━━━━━━━━━━━━━━━━━━╯
-✨ *POWERED BY RAHUL-AI* ✨`;
+                const uptimeMs = Date.now() - startTime;
+                const uptimeHours = Math.floor(uptimeMs / 3600000);
+                const uptimeMinutes = Math.floor((uptimeMs % 3600000) / 60000);
+                const menuStyles = [
+                    { name: 'NEON CYBER', header: '╭━━〔 ⚡ RAHUL-AI-MINI 〕━━╮', line: '━━━━━━━━━━━━━━━━━━━━━━', footer: '╰━━━━━━━━━━━━━━━━━━━━━━╯' },
+                    { name: 'MIDNIGHT GLASS', header: '┏━━〔 ✦ RAHUL-AI-MINI ✦ 〕━━┓', line: '══════════════════════', footer: '┗━━━━━━━━━━━━━━━━━━━━━━┛' },
+                    { name: 'VOLT DASHBOARD', header: '◈━━━〔 🚀 RAHUL-AI-MINI 〕━━━◈', line: '▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬', footer: '◈━━━━━━━━━━━━━━━━━━━━━━◈' },
+                    { name: 'CLASSIC ELITE', header: '╔═══〔 🤖 RAHUL-AI-MINI 〕═══╗', line: '──────────────────────', footer: '╚══════════════════════╝' }
+                ];
+                const style = menuStyles[Math.floor(Math.random() * menuStyles.length)];
+                const menuText = style.header + '\\n' +
+                    '┃ ✨ *SMART WHATSAPP ASSISTANT*\\n' +
+                    '┃ 🎨 *Theme:* ' + style.name + '\\n' +
+                    '┃ 🟢 *Status:* ONLINE\\n' +
+                    '┃ 👑 *Developer:* Rahul Master\\n' +
+                    '┃ 🔖 *Prefix:* [ ' + PREFIX + ' ]\\n' +
+                    '┃ ⏱️ *Uptime:* ' + uptimeHours + 'h ' + uptimeMinutes + 'm\\n' + style.line + '\\n' +
+                    '┃ ⚙️ *BOT CONTROL*\\n' +
+                    '┃ ' + PREFIX + 'ping — System pulse\\n' +
+                    '┃ ' + PREFIX + 'uptime — Runtime details\\n' +
+                    '┃ ' + PREFIX + 'update — Update from GitHub\\n' +
+                    '┃ ' + PREFIX + 'alwaysonline on/off\\n' +
+                    '┃ ' + PREFIX + 'statusview on/off\\n' +
+                    '┃ ' + PREFIX + 'autoreact on/off\\n' +
+                    '┃ ' + PREFIX + 'autodl on/off\\n' +
+                    '┃ ' + PREFIX + 'setprefix <symbol>\\n' + style.line + '\\n' +
+                    '┃ 🎬 *MEDIA STUDIO*\\n' +
+                    '┃ ' + PREFIX + 'play <song> — Find music\\n' +
+                    '┃ ' + PREFIX + 'mp3 <YouTube link> — Media lookup\\n' +
+                    '┃ ' + PREFIX + 'tourl — Media to link\\n' +
+                    '┃ ' + PREFIX + 'sticker / ' + PREFIX + 's — Create sticker\\n' +
+                    '┃ Reply "send" to a status — Fetch media\\n' + style.line + '\\n' +
+                    '┃ 🧠 *SMART TOOLS*\\n' +
+                    '┃ ' + PREFIX + 'ai <text> — AI chat\\n' +
+                    '┃ ' + PREFIX + 'google <query> — Web search\\n' +
+                    '┃ ' + PREFIX + 'weather <city> — Weather report\\n' +
+                    '┃ ' + PREFIX + 'qr <text> — QR generator\\n' +
+                    '┃ ' + PREFIX + 'calc <math> — Safe calculator\\n' +
+                    '┃ ' + PREFIX + 'quote — Daily motivation\\n' + style.line + '\\n' +
+                    '┃ 👥 *GROUP TOOLS*\\n' +
+                    '┃ ' + PREFIX + 'tagall [message]\\n' +
+                    '┃ ' + PREFIX + 'mute — Admin-only mode\\n' +
+                    '┃ ' + PREFIX + 'unmute — Open group chat\\n' + style.footer + '\\n' +
+                    '✦ *POWERED BY RAHUL-AI* ✦';
                 await sock.sendMessage(from, { text: menuText }, { quoted: msg });
             }
             else if (command === 'play' || command === 'song') {
