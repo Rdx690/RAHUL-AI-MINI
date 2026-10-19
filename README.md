@@ -2,7 +2,7 @@
 
 A lightweight WhatsApp assistant built with Node.js and Baileys, featuring a responsive neon-glass pairing portal, media helpers, smart utilities, and group commands.
 
-## ✨ What's new in v1.1.0
+## ✨ What's new in v1.1.1
 
 - Refreshed dark neon/glass pairing portal with responsive layout
 - Phone-number validation, useful error messages, and tap-to-copy pairing code
