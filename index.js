@@ -22,6 +22,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 let sock = null;
+let authState = null;
 
 // Hosting health check.
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok', service: 'RAHUL-AI-MINI' }));
@@ -39,8 +40,8 @@ app.get('/', (_req, res) => {
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:#07111f;color:#f8fafc;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:hidden}
 body:before,body:after{content:"";position:fixed;width:300px;height:300px;border-radius:50%;filter:blur(115px);opacity:.25;pointer-events:none;z-index:-1}
 body:before{background:#0284c7;left:4%;top:8%}body:after{background:#22c55e;right:2%;bottom:5%}
-.card{width:100%;max-width:450px;padding:30px 25px;border-radius:28px;background:linear-gradient(145deg,rgba(15,28,48,.97),rgba(8,18,33,.94));border:1px solid rgba(125,211,252,.28);box-shadow:0 28px 80px #0008,0 0 45px #0ea5e912;backdrop-filter:blur(18px)}
-.brand{display:inline-flex;align-items:center;gap:9px;border:1px solid #38bdf866;background:#0284c722;border-radius:99px;padding:10px 16px;color:#7dd3fc;font-weight:900;letter-spacing:1px;box-shadow:0 0 24px #0284c72b}
+.card{position:relative;isolation:isolate;width:100%;max-width:470px;padding:clamp(26px,6vw,36px) 25px;border-radius:28px;background:linear-gradient(145deg,rgba(16,20,30,.98),rgba(8,12,20,.97));box-shadow:0 28px 80px #0009,0 0 38px #ec489922;backdrop-filter:blur(18px)}\n.card:before{content:"";position:absolute;inset:-3px;border-radius:31px;padding:3px;background:linear-gradient(135deg,#ff006e,#7c3aed,#22d3ee,#ff006e);background-size:300% 300%;animation:neonBorder 6s ease infinite;z-index:-2}\n.card:after{content:"";position:absolute;inset:0;border-radius:28px;background:linear-gradient(145deg,#10141e,#0b1018);z-index:-1}\n@keyframes neonBorder{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.brand{display:inline-flex;align-items:center;gap:9px;border:1px solid #22d3ee66;background:linear-gradient(110deg,#ec48991c,#22d3ee1c);border-radius:99px;padding:11px 17px;color:#67e8f9;font-weight:900;letter-spacing:1px;box-shadow:0 0 24px #22d3ee20}
 .eyebrow{display:flex;align-items:center;justify-content:center;gap:8px;margin:22px 0 12px;color:#86efac;font-size:10px;font-weight:900;letter-spacing:1.8px}
 .dot{height:7px;width:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
 h1{font-size:clamp(27px,7vw,35px);letter-spacing:-1px;text-align:center;margin:0 0 10px}h1 span{color:var(--cyan)}
@@ -49,8 +50,8 @@ label{display:block;font-size:12px;font-weight:750;color:#cbd5e1;margin:0 0 8px 
 input{width:100%;padding:15px;border-radius:13px;border:1px solid #334155;background:#081323;color:#fff;font-size:16px;text-align:center;outline:none;transition:.2s}
 input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #38bdf81c}
 .hint{font-size:11px;color:#64748b;margin:8px 0 17px 3px}
-button{width:100%;border:0;border-radius:13px;padding:15px;background:linear-gradient(110deg,#0369a1,#2563eb,#0ea5e9);background-size:200% 100%;color:white;font-weight:850;font-size:15px;cursor:pointer;box-shadow:0 9px 24px #0284c73d;transition:transform .2s,filter .2s}
-button:hover{transform:translateY(-2px);filter:brightness(1.12)}button:disabled{opacity:.65;cursor:wait;transform:none}
+button{width:100%;border:0;border-radius:13px;padding:16px;background:linear-gradient(110deg,#f00663,#a21caf,#06b6d4);background-size:200% 100%;color:white;font-weight:900;font-size:15px;cursor:pointer;box-shadow:0 9px 28px #ec489944;transition:transform .2s,filter .2s,background-position .4s}
+button:hover{transform:translateY(-2px);filter:brightness(1.12);background-position:100% 0}button:disabled{opacity:.65;cursor:wait;transform:none}
 .error{display:none;color:#fecaca;background:#7f1d1d30;border:1px solid #f8717133;border-radius:12px;padding:11px;margin-top:13px;font-size:12px;line-height:1.5}
 .code-box{display:none;margin-top:17px;padding:17px;background:#081323;border:1px dashed #4ade8080;border-radius:15px;text-align:center}
 .code-label{font-size:10px;letter-spacing:1.5px;font-weight:850;color:#7dd3fc;margin-bottom:10px}
@@ -64,7 +65,7 @@ footer{text-align:center;margin-top:23px;color:#64748b;font-size:10px;letter-spa
 </style>
 </head>
 <body><main class="card">
-<div style="text-align:center"><div class="brand">✦ RAHUL-AI-MINI</div></div>
+<div style="text-align:center"><div class="brand">🤖 RAHUL-AI-MINI 🤖</div></div>
 <div class="eyebrow"><i class="dot"></i> WHATSAPP CONNECTION</div>
 <h1>Pair your device<span>.</span></h1>
 <p class="lead">Connect your WhatsApp account with a pairing code in a few simple steps.</p>
@@ -103,7 +104,7 @@ app.get('/pair', async (req, res) => {
     }
     if (!sock) return res.status(503).json({ error: 'WhatsApp is still starting. Wait a few seconds and retry.' });
     try {
-        if (!sock.authState.creds.registered) {
+        if (!authState?.creds?.registered) {
             await delay(1200);
             const code = await sock.requestPairingCode(cleanedNumber);
             return res.json({ code, status: 'success' });
@@ -191,6 +192,7 @@ function calculateExpression(expression) {
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('session');
+    authState = state;
     const { version } = await fetchLatestBaileysVersion();
     sock = makeWASocket({ version, logger: pino({ level: 'silent' }), printQRInTerminal: false, auth: state, browser: Browsers.ubuntu('Chrome') });
     sock.ev.on('creds.update', saveCreds);
