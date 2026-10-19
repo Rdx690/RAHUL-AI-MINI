@@ -2,7 +2,7 @@
 
 A lightweight WhatsApp assistant built with Node.js and Baileys, featuring a responsive neon-glass pairing portal, media helpers, smart utilities, and group commands.
 
-## ✨ What's new in v1.1.1
+## ✨ What's new in v1.1.2
 
 - Refreshed dark neon/glass pairing portal with responsive layout
 - Phone-number validation, useful error messages, and tap-to-copy pairing code
@@ -13,7 +13,7 @@ A lightweight WhatsApp assistant built with Node.js and Baileys, featuring a res
 - Added the missing `form-data` package dependency
 - Updated setup and Docker instructions
 
-## Requirements
+- Added Sayan Nexus music API to `.play <song>` and `.song <song>` with track details, thumbnail, and MP3 audio delivery\n\n## Requirements
 
 - Node.js 20 or newer
 - npm
