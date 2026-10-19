@@ -1,7 +1,7 @@
 {
   "name": "rahul-ai-mini",
-  "version": "1.1.1",
-  "description": "RAHUL-AI-MINI WhatsApp bot with a modern neon pairing portal",
+  "version": "1.1.2",
+  "description": "RAHUL-AI-MINI WhatsApp bot with a modern neon pairing portal and music API playback",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
