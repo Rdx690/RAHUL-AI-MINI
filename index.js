@@ -97,7 +97,7 @@ pairCode.addEventListener('click',async()=>{if(!pairCode.textContent||pairCode.t
 
 // Pairing endpoint: no default phone number and no sensitive error details in responses.
 app.get('/pair', async (req, res) => {
-    const cleanedNumber = String(req.query.number || '').replace(/\\D/g, '');
+    const cleanedNumber = String(req.query.number || '').replace(/\D/g, '');
     res.set('Cache-Control', 'no-store');
     if (cleanedNumber.length < 8 || cleanedNumber.length > 15) {
         return res.status(400).json({ error: 'Enter a valid phone number including country code (8–15 digits).' });
