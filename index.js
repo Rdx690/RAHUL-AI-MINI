@@ -145,6 +145,28 @@ async function getFastVideoUrl(url) {
     return null;
 }
 
+// Media helpers: download actual bytes before passing media to Baileys.
+function findMediaUrl(payload, kind='video') {
+ const out=[], seen=new Set(), keys=/^(url|download|download_url|downloadUrl|media|media_url|mediaUrl|video|video_url|videoUrl|audio|audio_url|audioUrl|link|src|hd|sd|mp4|mp3)$/i;
+ function walk(v,k=''){if(!v)return;if(typeof v==='string'){if(/^https?:\/\//i.test(v)&&keys.test(k)&&!/thumbnail|image|avatar/i.test(k)&&!seen.has(v)){seen.add(v);out.push({url:v,key:k});}return;}if(Array.isArray(v)){v.forEach(x=>walk(x,k));return;}if(typeof v==='object')Object.entries(v).forEach(([a,b])=>walk(b,a));}
+ walk(payload);const audio=/audio|mp3/i.test(kind);
+ return (audio?out.find(x=>/audio|mp3|download/i.test(x.key)):out.find(x=>/video|mp4|download|media|url|link/i.test(x.key)))?.url||out[0]?.url||null;
+}
+async function downloadMediaBytes(url,maxBytes=80*1024*1024){
+ if(!url||!/^https?:\/\//i.test(url))throw new Error('API did not return a valid media URL');
+ const r=await axios.get(url,{responseType:'arraybuffer',timeout:120000,maxContentLength:maxBytes,maxBodyLength:maxBytes,headers:{'User-Agent':'Mozilla/5.0 RAHUL-AI-MINI/1.0',Accept:'*/*'},validateStatus:s=>s>=200&&s<300});
+ const buffer=Buffer.from(r.data),contentType=String(r.headers['content-type']||'').toLowerCase();
+ if(!buffer.length||buffer.length>maxBytes)throw new Error('Downloaded media is empty or too large');
+ if(contentType.includes('text/html')||contentType.includes('application/json'))throw new Error('URL returned webpage/API data, not media');
+ return {buffer,contentType};
+}
+async function getSayanMedia(endpoint,params){
+ const r=await axios.get('https://api.sayan-nexuswork.workers.dev/'+endpoint,{params,timeout:25000,headers:{Accept:'application/json','User-Agent':'RAHUL-AI-MINI/1.0'}});
+ const data=r.data;if(!data||data.status==='error'||data.success===false)throw new Error(data?.message||data?.error||'Media API did not return a result');
+ const url=findMediaUrl(data,endpoint==='music'?'audio':'video');if(!url)throw new Error('No downloadable media URL found in API response');
+ return {data,url};
+}
+
 // Arithmetic parser: supports numbers, parentheses and basic arithmetic operators.
 function calculateExpression(expression) {
     if (!expression || expression.length > 120 || !/^[0-9+\\-*/%.()]+$/.test(expression)) throw new Error('Invalid expression');
@@ -373,7 +395,7 @@ async function connectToWhatsApp() {
                     '┃ ' + PREFIX + 'autodl on/off\\n' +
                     '┃ ' + PREFIX + 'setprefix <symbol>\\n' + style.line + '\\n' +
                     '┃ 🎬 *MEDIA STUDIO*\\n' +
-                    '┃ ' + PREFIX + 'play <song> — Find music\\n' +
+                    '┃ ' + PREFIX + 'play <song> — Find and send music\\n' +\n                    '┃ ' + PREFIX + 'video <query> — Download video\\n' +\n                    '┃ ' + PREFIX + 'insta <URL> — Download Instagram media\\n' +
                     '┃ ' + PREFIX + 'mp3 <YouTube link> — Media lookup\\n' +
                     '┃ ' + PREFIX + 'tourl — Media to link\\n' +
                     '┃ ' + PREFIX + 'sticker / ' + PREFIX + 's — Create sticker\\n' +
@@ -392,16 +414,36 @@ async function connectToWhatsApp() {
                     '✦ *POWERED BY RAHUL-AI* ✦';
                 await sock.sendMessage(from, { text: menuText }, { quoted: msg });
             }
+            else if (command === 'video' || command === 'ytv') {
+                if (!args) return sock.sendMessage(from,{text:'🎬 Use: '+PREFIX+'video <song name or YouTube link>'},{quoted:msg});
+                await sock.sendMessage(from,{text:'⏳ Searching and downloading video…'},{quoted:msg});
+                try {
+                    const result=await getSayanMedia('video',{query:args});
+                    const media=await downloadMediaBytes(result.url,80*1024*1024);
+                    const title=result.data?.title||result.data?.data?.title||args;
+                    await sock.sendMessage(from,{video:media.buffer,mimetype:'video/mp4',fileName:(String(title).replace(/[\\/:*?"<>|]/g,'_').slice(0,80)||'video')+'.mp4',caption:'🎬 *'+title+'*\n⚡ RAHUL-AI-MINI'},{quoted:msg});
+                } catch(err) { console.error('Video command error:',err.message); await sock.sendMessage(from,{text:'❌ Video failed: '+String(err.message||'API/media error').slice(0,180)},{quoted:msg}); }
+            }
+            else if (command === 'insta' || command === 'ig') {
+                if (!args||!/^https?:\/\/(www\.)?instagram\.com\//i.test(args.trim())) return sock.sendMessage(from,{text:'📸 Use: '+PREFIX+'insta <public Instagram post/reel URL>'},{quoted:msg});
+                await sock.sendMessage(from,{text:'📥 Fetching Instagram media…'},{quoted:msg});
+                try {
+                    const result=await getSayanMedia('insta',{url:args.trim()});
+                    const media=await downloadMediaBytes(result.url,80*1024*1024);
+                    const title=result.data?.title||result.data?.caption||result.data?.data?.title||'Instagram media';
+                    if(media.contentType.startsWith('image/')) await sock.sendMessage(from,{image:media.buffer,mimetype:media.contentType,caption:'📸 *'+title+'*\n⚡ RAHUL-AI-MINI'},{quoted:msg});
+                    else await sock.sendMessage(from,{video:media.buffer,mimetype:'video/mp4',fileName:'instagram-media.mp4',caption:'📸 *'+title+'*\n⚡ RAHUL-AI-MINI'},{quoted:msg});
+                } catch(err) { console.error('Instagram command error:',err.message); await sock.sendMessage(from,{text:'❌ Instagram failed. Use a public reel/post URL. '+String(err.message||'').slice(0,140)},{quoted:msg}); }
+            }
             else if (command === 'play' || command === 'song') {
                 if (!args) return sock.sendMessage(from, { text: '🎵 *MUSIC STUDIO*\\n\\nUse: ' + PREFIX + 'play <song name>\\nExample: ' + PREFIX + 'play Blinding Lights' }, { quoted: msg });
                 await sock.sendMessage(from, { text: '╭━━〔 🎧 MUSIC STUDIO 〕━━╮\\n┃ 🔎 Searching: ' + args + '\\n┃ ⚡ Fetching song details…\\n╰━━━━━━━━━━━━━━━━━━━━╯' }, { quoted: msg });
                 try {
-                    const musicApi = 'https://api.sayan-nexuswork.workers.dev/music?query=' + encodeURIComponent(args);
-                    const musicResponse = await axios.get(musicApi, { timeout: 20000 });
-                    const song = musicResponse.data;
-                    if (!song || song.status !== 'success' || !song.url) {
-                        return sock.sendMessage(from, { text: '❌ No playable song found. Try another title.' }, { quoted: msg });
-                    }
+                    const resolved = await getSayanMedia('music', { query: args });
+                    const song = resolved.data;
+                    const audioMedia = await downloadMediaBytes(resolved.url, 25 * 1024 * 1024);
+                    song.url = resolved.url;
+                    song.audioBuffer = audioMedia.buffer;
                     const caption = '╭━━━〔 🎶 *NOW PLAYING* 〕━━━╮\\n' +
                         '┃ 🎵 *Title:* ' + (song.title || args) + '\\n' +
                         '┃ 🎤 *Artist/Channel:* ' + (song.channel || 'Unknown') + '\\n' +
@@ -422,9 +464,9 @@ async function connectToWhatsApp() {
                         await sock.sendMessage(from, { text: caption }, { quoted: msg });
                     }
                     await sock.sendMessage(from, {
-                        audio: { url: song.url },
+                        audio: song.audioBuffer,
                         mimetype: 'audio/mpeg',
-                        fileName: ((song.title || args).replace(/[\\\\/:*?"<>|]/g, '_').slice(0, 100) || 'song') + '.mp3',
+                        fileName: ((song.title || args).replace(/[\\/:*?"<>|]/g, '_').slice(0, 100) || 'song') + '.mp3',
                         ptt: false
                     }, { quoted: msg });
                 } catch (err) {
